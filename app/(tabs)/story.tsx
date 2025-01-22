@@ -8,11 +8,11 @@ import {
   ActivityIndicator,
   TouchableOpacity,
   Linking,
-  Dimensions
+  Dimensions,
 } from 'react-native';
-import { ScrollView } from 'react-native-gesture-handler';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { FlatList } from 'react-native';
 
-// Define the Article interface
 interface Article {
   image: string;
   title: string;
@@ -20,7 +20,7 @@ interface Article {
   link: string;
 }
 
-const { width, height } = Dimensions.get('window'); // To get the screen size
+const { width, height } = Dimensions.get('window'); // Screen dimensions
 
 const StoryScreen = () => {
   const [articles, setArticles] = useState<Article[]>([]);
@@ -29,7 +29,7 @@ const StoryScreen = () => {
   useEffect(() => {
     const fetchArticles = async () => {
       try {
-        const response = await fetch('http://localhost:3001/api/news');
+        const response = await fetch('https://my-server-app.vercel.app/api/news');
         const data = await response.json();
         setArticles(data);
       } catch (error) {
@@ -45,38 +45,43 @@ const StoryScreen = () => {
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#000" />
-        <Text>Loading articles...</Text>
+        <ActivityIndicator size="large" color="#fff" />
+        <Text style={styles.loadingText}>Loading articles...</Text>
       </View>
     );
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <ScrollView contentContainerStyle={styles.scrollContainer}>
-        {articles.map((article, index) => (
-          <View key={index} style={styles.articleCard}>
-            <ImageBackground
-              source={{ uri: article.image }}
-              style={styles.imageBackground}
-              imageStyle={styles.image}
-            >
-              <View style={styles.contentContainer}>
-                <Text style={styles.title}>{article.title}</Text>
-                <TouchableOpacity
-                  onPress={() => {
-                    // Open the article link
-                    Linking.openURL(article.link);
-                  }}
-                >
-                  <Text style={styles.link}>Read More</Text>
-                </TouchableOpacity>
-              </View>
-            </ImageBackground>
-          </View>
-        ))}
-      </ScrollView>
-    </SafeAreaView>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <SafeAreaView style={styles.container}>
+        <FlatList
+          data={articles}
+          keyExtractor={(item, index) => index.toString()}
+          horizontal
+          pagingEnabled // Enables horizontal swipe with snapping
+          showsHorizontalScrollIndicator={false}
+          renderItem={({ item }) => (
+            <View style={styles.storyContainer}>
+              <ImageBackground
+                source={{ uri: item.image }}
+                style={styles.imageBackground}
+              >
+                <View style={styles.contentContainer}>
+                  <Text style={styles.title}>{item.title}</Text>
+                  <TouchableOpacity
+                    onPress={() => {
+                      Linking.openURL(item.link);
+                    }}
+                  >
+                    <Text style={styles.link}>Read More</Text>
+                  </TouchableOpacity>
+                </View>
+              </ImageBackground>
+            </View>
+          )}
+        />
+      </SafeAreaView>
+    </GestureHandlerRootView>
   );
 };
 
@@ -85,30 +90,25 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#000',
   },
-  scrollContainer: {
-    flex: 1,
-  },
-  articleCard: {
+  storyContainer: {
     width: width,
-    height: height, // Full screen height
+    height: 700,
+    padding: 20,
+    borderRadius: 20
   },
   imageBackground: {
     flex: 1,
-    justifyContent: 'flex-end', // Position content at the bottom
-    height: height,
-  },
-  image: {
+    justifyContent: 'flex-end',
     resizeMode: 'cover',
-    width: '100%',
-    height: '100%',
+    borderRadius: 20
   },
   contentContainer: {
     position: 'absolute',
-    bottom: 20,
+    bottom: 50,
     left: 20,
     right: 20,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    padding: 10,
+    padding: 20,
     borderRadius: 8,
   },
   title: {
@@ -119,12 +119,19 @@ const styles = StyleSheet.create({
   link: {
     color: '#00f',
     marginTop: 10,
+    fontSize: 16,
     textDecorationLine: 'underline',
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: '#000',
+  },
+  loadingText: {
+    marginTop: 10,
+    color: '#fff',
+    fontSize: 18,
   },
 });
 
